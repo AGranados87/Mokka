@@ -27,7 +27,7 @@ fun PomodoroApp() {
                 title = {
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = "Mokka",
+                            text = "",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Serif,

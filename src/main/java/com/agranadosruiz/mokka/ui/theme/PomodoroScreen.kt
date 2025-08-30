@@ -1,5 +1,6 @@
 package com.agranadosruiz.mokka
 
+import BubblesAnimation
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -59,13 +60,30 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally
             )
             {
-                Image(
-                    painter = painterResource(id = R.drawable.mokkabackgroundless),
-                    contentDescription = "Logo de la app",
+                Box(
                     modifier = Modifier
                         .height(220.dp)
-                        .padding(bottom = 16.dp)
-                )
+                        .padding(bottom = 16.dp),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.mokkaamerican),
+                        contentDescription = "Cafetera",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (isRunning) {
+                        BubblesAnimation()
+                    }
+                }
+
+//                Image(
+//                    painter = painterResource(id = R.drawable.mokkabackgroundless),
+//                    contentDescription = "Logo de la app",
+//                    modifier = Modifier
+//                        .height(220.dp)
+//                        .padding(bottom = 16.dp)
+//                )
 
                 Text(
                     text = formatTime(timeLeft),
