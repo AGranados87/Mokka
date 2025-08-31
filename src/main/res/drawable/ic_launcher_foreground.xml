@@ -6,7 +6,6 @@
         <color android:color="#F0E6D2" />
     </item>
 
-    <!-- Imagen centrada y adaptada, círculo más grande -->
     <item>
         <inset
             android:drawable="@drawable/mokkapositive"
