@@ -34,13 +34,13 @@ fun BubblesAnimation(
                 xOffset = Random.nextInt(-40, 40).toFloat(),   // dispersión horizontal base
                 drift = Random.nextInt(-12, 12).toFloat(),      // amplitud de vaivén
                 size = Random.nextInt(8, 16).dp,                // tamaño en dp
-                duration = Random.nextInt(1800, 3600),          // ms
-                delay = Random.nextInt(0, 1500)                 // ms
+                duration = Random.nextInt(1800, 3600),
+                delay = Random.nextInt(0, 1500),
+                startProgress = Random.nextFloat() * 0.8f
             )
         }
     }
 
-    // Un "progreso" 0..1 por burbuja (composable)
     val progresses = bubbles.mapIndexed { i, b ->
         infinite.animateFloat(
             initialValue = 0f,
@@ -80,5 +80,6 @@ data class Bubble(
     val drift: Float,
     val size: Dp,
     val duration: Int,
-    val delay: Int
+    val delay: Int,
+    val startProgress: Float
 )
