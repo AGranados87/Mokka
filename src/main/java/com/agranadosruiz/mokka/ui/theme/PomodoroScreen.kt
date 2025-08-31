@@ -1,6 +1,5 @@
 package com.agranadosruiz.mokka
 
-import BubblesAnimation
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,9 +35,9 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun PomodoroScreen(modifier: Modifier = Modifier) {
-    var timeLeft by remember { mutableStateOf(25 * 60) }
+    var timeLeft by remember { mutableIntStateOf(25 * 60) }
     var isRunning by remember { mutableStateOf(false) }
-    var completedSessions by remember { mutableStateOf(0) }
+    var completedSessions by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
 
     Box(
@@ -58,33 +59,46 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     .fillMaxWidth(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
-            )
-            {
+            ) {
+
+                // --- LOGO o CAFETERA según estado ---
                 Box(
                     modifier = Modifier
                         .height(220.dp)
                         .padding(bottom = 16.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.mokkaamerican),
-                        contentDescription = "Cafetera",
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    if (!isRunning) {
+                        // Imagen estática cuando el contador está parado
+                        Image(
+                            painter = painterResource(id = R.drawable.mokkabackgroundless),
+                            contentDescription = "Logo de la app",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        // Imagen cafetera + burbujas cuando está corriendo
+                        Image(
+                            painter = painterResource(id = R.drawable.coffee),
+                            contentDescription = "Cafetera",
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                    if (isRunning) {
-                        BubblesAnimation()
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 0.dp, end = 20.dp)
+                        ) {
+                            BubblesAnimation(areaWidth = 120.dp,
+                                areaHeight = 120.dp,
+                                modifier = Modifier.offset(
+                                    x = (-30).dp,   // 🔹 mueve las burbujas a la izquierda
+                                    y = (-60).dp   // 🔹 mantiene la altura ajustada
+                                ))
+                        }
                     }
                 }
 
-//                Image(
-//                    painter = painterResource(id = R.drawable.mokkabackgroundless),
-//                    contentDescription = "Logo de la app",
-//                    modifier = Modifier
-//                        .height(220.dp)
-//                        .padding(bottom = 16.dp)
-//                )
-
+                // --- Contador ---
                 Text(
                     text = formatTime(timeLeft),
                     fontSize = 48.sp,
@@ -93,6 +107,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // --- Botones ---
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(
                         onClick = {
@@ -134,6 +149,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // --- Sesiones completadas ---
                 Text(
                     text = "Sesiones completadas: $completedSessions",
                     color = MaterialTheme.colorScheme.onSurface,
@@ -143,6 +159,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
         }
     }
 }
+
 
 fun formatTime(seconds: Int): String {
     val min = seconds / 60
