@@ -46,6 +46,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
     var isRunning by remember { mutableStateOf(false) }
     var completedSessions by remember { mutableIntStateOf(0) }
     var showDurationDialog by remember { mutableStateOf(true) } // control del modal
+    var isBreak by remember { mutableStateOf(false) } // identifica descanso o trabajo
     val scope = rememberCoroutineScope()
 
     // --- Modal inicial para elegir duración ---
@@ -76,6 +77,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                         onTimeSelected = { newTime ->
                             selectedTime = newTime
                             timeLeft = selectedTime * 60
+                            isBreak = false // cada vez que eliges, empieza en trabajo
                         }
                     )
 
@@ -114,7 +116,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // --- LOGO o CAFETERA según estado ---
+                // --- LOGO o CAFETERA/Taza según estado ---
                 Box(
                     modifier = Modifier
                         .height(250.dp)
@@ -128,39 +130,59 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.coffee),
-                            contentDescription = "Cafetera",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = 0.dp, end = 20.dp)
-                        ) {
-                            BubblesAnimation(
-                                areaWidth = 120.dp,
-                                areaHeight = 120.dp,
-                                modifier = Modifier.offset(
-                                    x = (-30).dp,
-                                    y = (-60).dp
-                                )
+                        if (isBreak) {
+                            // Mostrar taza en descansos
+                            Image(
+                                painter = painterResource(id = R.drawable.cup2),
+                                contentDescription = "Descanso con taza",
+                                modifier = Modifier.fillMaxWidth()
                             )
-                        }
 
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .offset(y = (-35).dp)
-                        ) {
-                            FlamesAnimation(
-                                areaWidth = 220.dp,
-                                areaHeight = 100.dp,
+                            // Contador debajo de la taza
+                            Text(
+                                text = formatTime(timeLeft),
+                                fontSize = 40.sp,
+                                color = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentWidth(Alignment.CenterHorizontally)
+                                    .align(Alignment.BottomCenter)
+                                    .offset(y = 40.dp) // ajusta la posición
                             )
+                        } else {
+                            // Mostrar cafetera cuando está en sesión de trabajo
+                            Image(
+                                painter = painterResource(id = R.drawable.coffee),
+                                contentDescription = "Cafetera",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = 0.dp, end = 20.dp)
+                            ) {
+                                BubblesAnimation(
+                                    areaWidth = 120.dp,
+                                    areaHeight = 120.dp,
+                                    modifier = Modifier.offset(
+                                        x = (-30).dp,
+                                        y = (-60).dp
+                                    )
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .offset(y = (-35).dp)
+                            ) {
+                                FlamesAnimation(
+                                    areaWidth = 220.dp,
+                                    areaHeight = 100.dp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentWidth(Alignment.CenterHorizontally)
+                                )
+                            }
                         }
                     }
                 }
@@ -168,8 +190,9 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                 // --- Contador ---
                 Text(
                     text = formatTime(timeLeft),
-                    fontSize = 48.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    fontSize = 50.sp,
+                    color = if (isBreak) MaterialTheme.colorScheme.secondary
+                    else MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -186,8 +209,31 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                                         timeLeft -= 1
                                     }
                                     if (timeLeft == 0) {
-                                        completedSessions++
-                                        isRunning = false
+                                        if (!isBreak) {
+                                            // terminó una sesión de trabajo
+                                            completedSessions++
+                                            // descanso corto (25 min, 5 min) o largo (50 min, 10 min)
+                                            timeLeft = if (selectedTime == 25) 5 * 60 else 10 * 60
+                                            isBreak = true
+                                            isRunning = true
+                                            scope.launch {
+                                                while (isRunning && timeLeft > 0) {
+                                                    delay(1000)
+                                                    timeLeft--
+                                                }
+                                                if (timeLeft == 0) {
+                                                    // terminó descanso, volver a trabajo
+                                                    timeLeft = selectedTime * 60
+                                                    isBreak = false
+                                                    isRunning = false
+                                                }
+                                            }
+                                        } else {
+                                            // Terminó descanso, volver a trabajo
+                                            timeLeft = selectedTime * 60
+                                            isBreak = false
+                                            isRunning = false
+                                        }
                                     }
                                 }
                             }
@@ -197,7 +243,11 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Text(if (isRunning) "Pausar" else "Iniciar")
+                        Text(
+                            if (isRunning) "Pausar"
+                            else if (isBreak) "Descanso"
+                            else "Iniciar"
+                        )
                     }
 
                     Button(

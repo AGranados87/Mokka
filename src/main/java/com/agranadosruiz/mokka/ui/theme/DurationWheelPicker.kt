@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 fun DurationWheelPicker(
     selectedTime: Int,
     onTimeSelected: (Int) -> Unit,
-    options: List<Int> = listOf(15, 20, 25, 30, 50),
+    options: List<Int> = listOf(25, 50),
     visibleItems: Int = 3
 ) {
     val listState = rememberLazyListState(options.indexOf(selectedTime))
@@ -33,7 +33,7 @@ fun DurationWheelPicker(
 
     Box(
         modifier = Modifier
-            .height((visibleItems * 40).dp) // cada item 40dp de alto
+            .height((visibleItems * 40).dp)
             .width(100.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface),
@@ -60,7 +60,6 @@ fun DurationWheelPicker(
             }
         }
 
-        // Actualizamos el valor seleccionado
         LaunchedEffect(listState.firstVisibleItemIndex) {
             val newTime = options.getOrNull(listState.firstVisibleItemIndex) ?: selectedTime
             onTimeSelected(newTime)
