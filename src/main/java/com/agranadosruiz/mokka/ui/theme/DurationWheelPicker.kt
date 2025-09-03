@@ -14,6 +14,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,7 +27,7 @@ import androidx.compose.ui.unit.sp
 fun DurationWheelPicker(
     selectedTime: Int,
     onTimeSelected: (Int) -> Unit,
-    options: List<Int> = listOf(25, 50),
+    options: List<Int> = listOf(1, 50),
     visibleItems: Int = 3
 ) {
     val listState = rememberLazyListState(options.indexOf(selectedTime))
@@ -60,7 +62,7 @@ fun DurationWheelPicker(
             }
         }
 
-        LaunchedEffect(listState.firstVisibleItemIndex) {
+        LaunchedEffect(remember { derivedStateOf { listState.firstVisibleItemIndex } }) {
             val newTime = options.getOrNull(listState.firstVisibleItemIndex) ?: selectedTime
             onTimeSelected(newTime)
         }
