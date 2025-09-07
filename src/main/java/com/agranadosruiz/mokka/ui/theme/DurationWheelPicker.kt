@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.sp
 fun DurationWheelPicker(
     selectedTime: Int,
     onTimeSelected: (Int) -> Unit,
-    options: List<Int> = listOf(1, 50),
+    options: List<Int> = listOf(25, 50),
     visibleItems: Int = 3
 ) {
     val listState = rememberLazyListState(options.indexOf(selectedTime))
