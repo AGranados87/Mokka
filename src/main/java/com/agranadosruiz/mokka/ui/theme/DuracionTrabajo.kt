@@ -1,3 +1,4 @@
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,15 +24,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun DurationWheelPicker(
+fun DuracionTrabajo(
     selectedTime: Int,
     onTimeSelected: (Int) -> Unit,
     options: List<Int> = listOf(25, 50),
     visibleItems: Int = 3
 ) {
     val listState = rememberLazyListState(options.indexOf(selectedTime))
-    val scope = rememberCoroutineScope()
-
     Box(
         modifier = Modifier
             .height((visibleItems * 40).dp)

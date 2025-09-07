@@ -1,7 +1,7 @@
 package com.agranadosruiz.mokka
 
-import DurationWheelPicker
-import FlamesAnimation
+import DuracionTrabajo
+import Llamas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -41,7 +41,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun PomodoroScreen(modifier: Modifier = Modifier) {
     // Estados principales
-    var selectedTime by remember { mutableIntStateOf(1) } // Tiempo de trabajo en minutos
+    var selectedTime by remember { mutableIntStateOf(25) } // Tiempo de trabajo en minutos
     var timeLeft by remember { mutableIntStateOf(selectedTime * 60) } // Tiempo restante en segundos
     var isRunning by remember { mutableStateOf(false) }
     var completedSessions by remember { mutableStateOf(0) }
@@ -111,7 +111,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    DurationWheelPicker(
+                    DuracionTrabajo(
                         selectedTime = selectedTime,
                         onTimeSelected = { newTime ->
                             selectedTime = newTime
@@ -208,7 +208,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                                     .align(Alignment.BottomCenter)
                                     .offset(y = (-35).dp)
                             ) {
-                                FlamesAnimation(
+                                Llamas(
                                     areaWidth = 220.dp,
                                     areaHeight = 100.dp,
                                     modifier = Modifier

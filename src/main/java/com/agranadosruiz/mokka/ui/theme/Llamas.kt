@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun FlamesAnimation(
+fun Llamas(
     modifier: Modifier = Modifier,
     areaWidth: Dp = 120.dp,
     areaHeight: Dp = 60.dp
