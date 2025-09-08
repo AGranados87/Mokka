@@ -1,4 +1,3 @@
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,10 +27,23 @@ import androidx.compose.ui.unit.sp
 fun DuracionTrabajo(
     selectedTime: Int,
     onTimeSelected: (Int) -> Unit,
-    options: List<Int> = listOf(25, 50),
+    options: List<Int> = listOf(1, 25, 50),
     visibleItems: Int = 3
 ) {
     val listState = rememberLazyListState(options.indexOf(selectedTime))
+
+    // índice del ítem centrado
+    val centerIndex by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val viewportCenter = layoutInfo.viewportStartOffset +
+                    (layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset) / 2
+            layoutInfo.visibleItemsInfo.minByOrNull { item ->
+                kotlin.math.abs((item.offset + item.size / 2) - viewportCenter)
+            }?.index ?: 0
+        }
+    }
+
     Box(
         modifier = Modifier
             .height((visibleItems * 40).dp)
@@ -46,7 +59,7 @@ fun DuracionTrabajo(
             modifier = Modifier.fillMaxSize()
         ) {
             itemsIndexed(options) { index, time ->
-                val isSelected = listState.firstVisibleItemIndex == index
+                val isSelected = index == centerIndex
                 Text(
                     text = "$time min",
                     fontSize = if (isSelected) 24.sp else 16.sp,
@@ -60,8 +73,9 @@ fun DuracionTrabajo(
             }
         }
 
-        LaunchedEffect(remember { derivedStateOf { listState.firstVisibleItemIndex } }) {
-            val newTime = options.getOrNull(listState.firstVisibleItemIndex) ?: selectedTime
+        // notifica el tiempo seleccionado
+        LaunchedEffect(centerIndex) {
+            val newTime = options.getOrNull(centerIndex) ?: selectedTime
             onTimeSelected(newTime)
         }
     }
