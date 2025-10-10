@@ -41,25 +41,25 @@ import kotlinx.coroutines.delay
 @Composable
 fun PomodoroScreen(modifier: Modifier = Modifier) {
     // Estados principales
-    var selectedTime by remember { mutableIntStateOf(25) } // Tiempo de trabajo en minutos
-    var timeLeft by remember { mutableIntStateOf(selectedTime * 60) } // Tiempo restante en segundos
+    var selectedTime by remember { mutableIntStateOf(25) }         // Trabajo (min)
+    var timeLeft by remember { mutableIntStateOf(selectedTime * 60) } // Segundos restantes
     var isRunning by remember { mutableStateOf(false) }
     var completedSessions by remember { mutableStateOf(0) }
     var showDurationDialog by remember { mutableStateOf(true) }
-    var sessionType by remember { mutableStateOf(SessionType.WORK) } // Enum para mejor control
-    var waitingForBreak by remember { mutableStateOf(false) } // Estado de espera para iniciar descanso
+    var sessionType by remember { mutableStateOf(SessionType.WORK) }
+    var waitingForBreak by remember { mutableStateOf(false) }       // Mostrar popup para iniciar descanso
 
-    // Función para obtener la duración del descanso
+    // Duración del descanso
     fun getBreakDuration(workMinutes: Int): Int {
         return when (workMinutes) {
-            1 -> 20  // 20 segundos para pruebas
-            25 -> 5 * 60  // 5 minutos
-            50 -> 10 * 60  // 10 minutos
-            else -> 10 * 60  // Por defecto 10 minutos
+            1 -> 20            // 20s para pruebas
+            25 -> 5 * 60       // 5 min
+            50 -> 10 * 60      // 10 min
+            else -> 10 * 60
         }
     }
 
-    // Temporizador principal
+    // Temporizador
     LaunchedEffect(isRunning, timeLeft) {
         if (isRunning && timeLeft > 0) {
             delay(1000)
@@ -67,21 +67,93 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
         }
     }
 
-    // Manejo de transiciones cuando el tiempo llega a 0
+    // Transiciones al llegar a 0
     LaunchedEffect(timeLeft) {
         if (timeLeft == 0 && isRunning) {
             when (sessionType) {
                 SessionType.WORK -> {
-                    // Termina el trabajo, inicia el descanso
+                    // Termina el trabajo -> NO arrancar descanso todavía
                     completedSessions++
-                    sessionType = SessionType.BREAK
-                    timeLeft = getBreakDuration(selectedTime)
+                    isRunning = false
+                    waitingForBreak = true
+                    timeLeft = getBreakDuration(selectedTime) // Preparamos el descanso pero pausado
+                    // OJO: no cambiamos sessionType hasta que el usuario pulse el botón
                 }
                 SessionType.BREAK -> {
-                    // Termina el descanso, vuelve al trabajo
+                    // Termina descanso -> Volver a trabajo y pausar
                     sessionType = SessionType.WORK
                     timeLeft = selectedTime * 60
                     isRunning = false
+                }
+            }
+        }
+    }
+
+    // Popup para iniciar descanso tras terminar trabajo
+    if (waitingForBreak) {
+        Dialog(onDismissRequest = { /* Evitar cerrar tocando fuera */ }) {
+            Card(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Periodo de trabajo realizado",
+                        fontSize = 20.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "¿Quieres iniciar el periodo de descanso ahora?",
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = {
+                                // Arranca el descanso cuando el usuario confirme
+                                sessionType = SessionType.BREAK
+                                isRunning = true
+                                waitingForBreak = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Text("Iniciar descanso")
+                        }
+
+                        Button(
+                            onClick = {
+                                // Opción: posponer (cerrar popup y quedarse en pausa)
+                                waitingForBreak = false
+                                // sessionType sigue en WORK hasta que reinicies manualmente
+                                // Dejamos timeLeft con la duración de descanso preparada por si luego quieres arrancar
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            )
+                        ) {
+                            Text("Más tarde")
+                        }
+                    }
                 }
             }
         }
@@ -118,7 +190,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             timeLeft = selectedTime * 60
                             sessionType = SessionType.WORK
                         },
-                        options = listOf(1, 25, 50) // Opciones disponibles
+                        options = listOf(1, 25, 50)
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -166,7 +238,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                 ) {
                     when {
                         !isRunning && sessionType == SessionType.WORK -> {
-                            // No está corriendo, muestra el logo
+                            // Logo cuando está parado en trabajo
                             Image(
                                 painter = painterResource(id = R.drawable.mokkabackgroundless),
                                 contentDescription = "Logo de la app",
@@ -174,7 +246,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             )
                         }
                         sessionType == SessionType.BREAK -> {
-                            // En descanso, muestra la taza
+                            // Descanso -> taza
                             Image(
                                 painter = painterResource(id = R.drawable.cup2),
                                 contentDescription = "Descanso con taza",
@@ -182,14 +254,14 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             )
                         }
                         sessionType == SessionType.WORK && isRunning -> {
-                            // Trabajando, muestra la cafetera con animaciones
+                            // Trabajando -> cafetera + animaciones
                             Image(
                                 painter = painterResource(id = R.drawable.coffee),
                                 contentDescription = "Cafetera",
                                 modifier = Modifier.fillMaxWidth()
                             )
 
-                            // Animación de burbujas
+                            // Burbujas
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopCenter)
@@ -202,7 +274,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                                 )
                             }
 
-                            // Animación de llamas
+                            // Llamas
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.BottomCenter)
@@ -220,7 +292,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     }
                 }
 
-                // Texto de estado (TRABAJO o DESCANSO)
+                // Texto de estado
                 Text(
                     text = when {
                         waitingForBreak -> "¡SESIÓN COMPLETADA!"
@@ -235,11 +307,11 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Contador de tiempo - CON FONDO PARA GARANTIZAR VISIBILIDAD
+                // Contador de tiempo (con fondo para legibilidad)
                 Box(
                     modifier = Modifier
                         .background(
-                            color = androidx.compose.ui.graphics.Color(0xFFFFFFFF), // Beige de fondo
+                            color = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
                             shape = RoundedCornerShape(12.dp)
                         )
                         .padding(horizontal = 24.dp, vertical = 8.dp)
@@ -247,7 +319,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     Text(
                         text = formatTime(timeLeft),
                         fontSize = 50.sp,
-                        color = androidx.compose.ui.graphics.Color(0xFF4E342E), // Marrón oscuro
+                        color = androidx.compose.ui.graphics.Color(0xFF4E342E),
                         style = androidx.compose.ui.text.TextStyle(
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                         )
@@ -262,6 +334,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                 ) {
                     Button(
                         onClick = { isRunning = !isRunning },
+                        enabled = !waitingForBreak, // Evitar que arranquen mientras mostramos el popup
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
@@ -282,6 +355,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             isRunning = false
                             sessionType = SessionType.WORK
                             timeLeft = selectedTime * 60
+                            waitingForBreak = false
                             showDurationDialog = true
                         },
                         colors = ButtonDefaults.buttonColors(
@@ -295,7 +369,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Contador de sesiones completadas
+                // Contador de sesiones
                 Text(
                     text = "Sesiones completadas: $completedSessions",
                     color = MaterialTheme.colorScheme.onSurface,
@@ -306,13 +380,8 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
     }
 }
 
-// Enum para los tipos de sesión
-enum class SessionType {
-    WORK,
-    BREAK
-}
+enum class SessionType { WORK, BREAK }
 
-// Función para formatear el tiempo
 fun formatTime(seconds: Int): String {
     val min = seconds / 60
     val sec = seconds % 60
