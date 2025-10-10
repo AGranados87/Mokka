@@ -2,13 +2,12 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -17,96 +16,68 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.sin
+import kotlin.random.Random
 
 @Composable
 fun AnimacionVapor(
     modifier: Modifier = Modifier,
-    anchoArea: Dp = 200.dp,
-    altoArea: Dp = 150.dp,
-    colorVapor: Color = Color.White.copy(alpha = 0.3f)
-) {
-    val transicionInfinita = rememberInfiniteTransition()
-
-    // Crear múltiples columnas de vapor
-    val columnasVapor = remember {
-        List(3) { indice ->
+    anchoArea: Dp = 160.dp,
+    altoArea: Dp = 120.dp,
+    colorVapor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+    posicionesX: List<Float> = listOf(0.46f, 0.5f, 0.54f, 0.54f, 0.54f, 0.54f),
+    amplitudOndulacionPx: Float = 18f,       // cuánto “serpentea” horizontalmente
+    distanciaEntreBurbujasPx: Float = 16f,   // separación entre círculos de una misma columna
+    numBurbujasPorColumna: Int = 8) {
+    val transicion = rememberInfiniteTransition(label = "vapor")
+    val columnas = remember {
+        posicionesX.map { pos ->
             ColumnaVapor(
-                posicionX = 0.3f + (indice * 0.2f), // Distribuir las columnas
-                desfaseOnda = indice * 0.5f // Diferentes fases para cada columna
+                posicionX = pos,
+                desfaseOnda = Random.nextFloat() * (2f * Math.PI.toFloat()),
+                duracionMs = Random.nextInt(3200, 4200)
             )
         }
     }
 
     Box(modifier = modifier.size(anchoArea, altoArea)) {
-        columnasVapor.forEachIndexed { indice, columna ->
-            // Animación de movimiento vertical
-            val posicionY = transicionInfinita.animateFloat(
-                initialValue = 1f,
-                targetValue = -0.2f,
+        columnas.forEachIndexed { idx, columna ->
+            val yAnim = transicion.animateFloat(
+                initialValue = 1.1f,  // empieza un poco más abajo del área
+                targetValue = -0.2f,  // se va por arriba
                 animationSpec = infiniteRepeatable(
-                    animation = tween(
-                        durationMillis = 4000 + (indice * 500), // Diferentes velocidades
-                        easing = LinearEasing
-                    ),
+                    animation = tween(durationMillis = columna.duracionMs, easing = LinearEasing),
                     repeatMode = RepeatMode.Restart
                 ),
-                label = "vaporY_$indice"
+                label = "vaporY_$idx"
             )
-
-            // Animación de ondulación
-            val ondulacion = transicionInfinita.animateFloat(
+            val onda = transicion.animateFloat(
                 initialValue = 0f,
                 targetValue = 2f * Math.PI.toFloat(),
                 animationSpec = infiniteRepeatable(
-                    animation = tween(
-                        durationMillis = 3000 + (indice * 300),
-                        easing = LinearEasing
-                    ),
+                    animation = tween(durationMillis = columna.duracionMs - 400, easing = LinearEasing),
                     repeatMode = RepeatMode.Restart
                 ),
-                label = "vaporOnda_$indice"
+                label = "vaporOnda_$idx"
             )
 
-            // Animación de transparencia
-            val transparencia = transicionInfinita.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = keyframes {
-                        durationMillis = 4000 + (indice * 500)
-                        0f at 0 with LinearEasing
-                        0.6f at 500 with LinearEasing
-                        0.6f at 3000 with LinearEasing
-                        0f at 4000 with LinearEasing
-                    },
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "vaporAlpha_$indice"
-            )
+            Canvas(modifier = Modifier.matchParentSize()) {
+                val w = size.width
+                val h = size.height
 
-            Canvas(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                val anchoPantalla = size.width
-                val altoPantalla = size.height
+                // X oscila alrededor de la posición base de la columna
+                val baseX = w * columna.posicionX
+                val x = baseX + sin(onda.value + columna.desfaseOnda) * amplitudOndulacionPx
+                val yBase = h * yAnim.value
 
-                // Calcular posición X con ondulación
-                val x = anchoPantalla * columna.posicionX +
-                        sin(ondulacion.value + columna.desfaseOnda) * 20f
-
-                // Calcular posición Y
-                val y = altoPantalla * posicionY.value
-
-                // Dibujar la columna de vapor como una serie de círculos difuminados
-                for (i in 0..5) {
-                    val offsetY = i * 15f
-                    val radio = 8f + i * 3f // Radio aumenta mientras sube
-                    val alpha = transparencia.value * (1f - i * 0.15f) // Se desvanece mientras sube
+                for (i in 0 until numBurbujasPorColumna) {
+                    val offsetY = i * distanciaEntreBurbujasPx
+                    val radio = 8f + i * 3f
+                    val alphaFactor = (1f - i * (1f / (numBurbujasPorColumna + 1))).coerceIn(0f, 1f)
 
                     drawCircle(
-                        color = colorVapor.copy(alpha = colorVapor.alpha * alpha),
+                        color = colorVapor.copy(alpha = colorVapor.alpha * alphaFactor),
                         radius = radio,
-                        center = Offset(x, y - offsetY)
+                        center = Offset(x, yBase - offsetY)
                     )
                 }
             }
@@ -114,8 +85,8 @@ fun AnimacionVapor(
     }
 }
 
-// Clase de datos para cada columna de vapor
-data class ColumnaVapor(
+private data class ColumnaVapor(
     val posicionX: Float,
-    val desfaseOnda: Float
+    val desfaseOnda: Float,
+    val duracionMs: Int
 )

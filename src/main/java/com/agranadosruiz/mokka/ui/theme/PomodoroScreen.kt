@@ -1,5 +1,6 @@
 package com.agranadosruiz.mokka
 
+import AnimacionVapor
 import DuracionTrabajo
 import Llamas
 import androidx.compose.foundation.Image
@@ -77,7 +78,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     isRunning = false
                     waitingForBreak = true
                     timeLeft = getBreakDuration(selectedTime) // Preparamos el descanso pero pausado
-                    // OJO: no cambiamos sessionType hasta que el usuario pulse el botón
+                    // no cambiamos sessionType hasta que el usuario pulse el botón
                 }
                 SessionType.BREAK -> {
                     // Termina descanso -> Volver a trabajo y pausar
@@ -143,8 +144,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             onClick = {
                                 // Opción: posponer (cerrar popup y quedarse en pausa)
                                 waitingForBreak = false
-                                // sessionType sigue en WORK hasta que reinicies manualmente
-                                // Dejamos timeLeft con la duración de descanso preparada por si luego quieres arrancar
+
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.secondary,
@@ -246,12 +246,30 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             )
                         }
                         sessionType == SessionType.BREAK -> {
-                            // Descanso -> taza
-                            Image(
-                                painter = painterResource(id = R.drawable.cup2),
-                                contentDescription = "Descanso con taza",
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(250.dp),
+                                contentAlignment = Alignment.TopCenter
+                            ) {
+                                // Taza
+                                Image(
+                                    painter = painterResource(id = R.drawable.cup2),
+                                    contentDescription = "Descanso con taza",
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                // Vapor en columnas sobre la boquilla
+                                AnimacionVapor(
+                                    anchoArea = 160.dp,
+                                    altoArea = 120.dp,
+                                    colorVapor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.35f),
+                                    posicionesX = listOf(0.46f, 0.5f, 0.54f),
+                                    modifier = Modifier
+                                        .align(Alignment.TopCenter)
+                                        .offset(y = (-10).dp) // ajusta para clavar la salida en la boquilla
+                                )
+                            }
                         }
                         sessionType == SessionType.WORK && isRunning -> {
                             // Trabajando -> cafetera + animaciones
