@@ -25,8 +25,8 @@ fun AnimacionVapor(
     altoArea: Dp = 120.dp,
     colorVapor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
     posicionesX: List<Float> = listOf(0.46f, 0.5f, 0.54f, 0.54f, 0.54f, 0.54f),
-    amplitudOndulacionPx: Float = 18f,       // cuánto “serpentea” horizontalmente
-    distanciaEntreBurbujasPx: Float = 16f,   // separación entre círculos de una misma columna
+    amplitudOndulacionPx: Float = 18f,
+    distanciaEntreBurbujasPx: Float = 16f,
     numBurbujasPorColumna: Int = 8) {
     val transicion = rememberInfiniteTransition(label = "vapor")
     val columnas = remember {
