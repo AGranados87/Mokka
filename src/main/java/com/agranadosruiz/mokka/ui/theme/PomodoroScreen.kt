@@ -5,6 +5,7 @@ import DuracionTrabajo
 import Llamas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +35,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -179,7 +184,12 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Periodo de trabajo realizado", fontSize = 20.sp, textAlign = TextAlign.Center)
+                    Text(
+                        "Periodo de trabajo realizado",
+                        fontSize = 20.sp,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.SemiBold
+                    )
                     Spacer(Modifier.height(16.dp))
                     Text(
                         "¿Quieres iniciar el periodo de descanso ahora?",
@@ -193,7 +203,11 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             onClick = {
                                 isRunning = true
                                 waitingForBreak = false
-                            }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         ) { Text("Iniciar descanso") }
 
                         Button(
@@ -225,7 +239,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("🎯 Ciclo x4 completado", fontSize = 20.sp, textAlign = TextAlign.Center)
+                    Text("🎯 Ciclo x4 completado", fontSize = 20.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     Text(
                         "Has terminado los 4 intervalos (25/5/25/5). ¿Qué quieres hacer?",
@@ -240,7 +254,11 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                                 // Reinicia el ciclo x4 al primer bloque (en pausa)
                                 resetWithNewPlan()
                                 cycleCompleteDialog = false
-                            }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         ) { Text("Repetir ciclo") }
 
                         Button(
@@ -250,38 +268,6 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                                 contentColor = MaterialTheme.colorScheme.onSecondary
                             )
                         ) { Text("Cerrar") }
-                    }
-                }
-            }
-        }
-    }
-
-    // -----------------------
-    // Modal de selección (solo modo manual)
-    // -----------------------
-    if (showDurationDialog && !cycle4Enabled) {
-        Dialog(onDismissRequest = { /* No cerrar al tocar fuera */ }) {
-            Card(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Selecciona la duración de la sesión", fontSize = 20.sp, textAlign = TextAlign.Center)
-                    Spacer(Modifier.height(16.dp))
-                    DuracionTrabajo(
-                        selectedTime = selectedTime,
-                        onTimeSelected = { newTime -> selectedTime = newTime },
-                        options = listOf(1, 25, 50)
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    Button(onClick = { showDurationDialog = false }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Confirmar")
                     }
                 }
             }
@@ -302,11 +288,12 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                 .padding(24.dp)
                 .fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+            shape = RoundedCornerShape(20.dp)
         ) {
             Column(
                 modifier = Modifier
-                    .padding(24.dp)
+                    .padding(20.dp)
                     .fillMaxWidth(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -326,7 +313,8 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             fontSize = 16.sp,
                             color = if (sessionType == SessionType.WORK)
                                 MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
                         )
                     } else {
                         val estado = when {
@@ -337,25 +325,47 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                         EstadoPildora(estado)
                     }
 
-                    // DERECHA: Botón toggle ciclo x4
+                    // DERECHA: Botón toggle ciclo x4 (filled vs outline)
                     val cicloLabel = if (cycle4Enabled) "Ciclo x4: ON" else "Ciclo x4: OFF"
+                    val isOn = cycle4Enabled
+                    val toggleShape = RoundedCornerShape(999.dp)
+
                     Button(
                         onClick = { cycle4Enabled = !cycle4Enabled },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (cycle4Enabled) MaterialTheme.colorScheme.onSurface
-                            else MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) { Text(cicloLabel) }
+                        colors = if (isOn) {
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        modifier = Modifier
+                            .then(
+                                if (!isOn) Modifier
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                                        toggleShape
+                                    )
+                                else Modifier
+                            ),
+                        shape = toggleShape
+                    ) { Text(cicloLabel, fontWeight = FontWeight.SemiBold) }
                 }
 
+                Spacer(Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                 Spacer(Modifier.height(12.dp))
 
                 // Sección imagen/animaciones
                 Box(
                     modifier = Modifier
-                        .height(250.dp)
-                        .padding(bottom = 16.dp),
+                        .height(260.dp)
+                        .padding(bottom = 8.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
                     when {
@@ -400,7 +410,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             AnimacionVapor(
                                 anchoArea = 160.dp,
                                 altoArea = 120.dp,
-                                colorVapor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.35f),
+                                colorVapor = Color.White.copy(alpha = 0.35f),
                                 posicionesX = listOf(0.46f, 0.5f, 0.54f),
                                 modifier = Modifier
                                     .align(Alignment.TopCenter)
@@ -418,42 +428,63 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     }
                 }
 
-                // Contador grande con pastilla blanca
+                // Progreso del bloque actual (moderno y sutil)
+                val totalSec = plan[currentIndex].durationSec
+                val progress = if (totalSec > 0) 1f - (timeLeft.toFloat() / totalSec.toFloat()) else 0f
+
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(999.dp)
+                        )
+                        .padding(vertical = 2.dp),
+                    trackColor = Color.Transparent,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                // Contador grande con cápsula blanca y sombra suave
                 Box(
                     modifier = Modifier
+                        .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp), clip = false)
                         .background(
-                            color = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
-                            shape = RoundedCornerShape(12.dp)
+                            color = Color.White,
+                            shape = RoundedCornerShape(16.dp)
                         )
-                        .padding(horizontal = 24.dp, vertical = 8.dp)
+                        .padding(horizontal = 28.dp, vertical = 10.dp)
                 ) {
                     Text(
                         text = formatTime(timeLeft),
-                        fontSize = 50.sp,
-                        color = androidx.compose.ui.graphics.Color(0xFF4E342E),
-                        style = androidx.compose.ui.text.TextStyle(
-                            fontWeight = FontWeight.Bold
-                        )
+                        fontSize = 52.sp,
+                        color = Color(0xFF4E342E),
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-0.5).sp
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
 
                 // Botones
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     Button(
                         onClick = { isRunning = !isRunning },
                         enabled = !(waitingForBreak && !cycle4Enabled) && !cycleCompleteDialog,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
+                        ),
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         val label = when {
                             isRunning -> "Pausar"
                             else -> if (sessionType == SessionType.BREAK) "Continuar" else "Iniciar"
                         }
-                        Text(label)
+                        Text(label, fontWeight = FontWeight.SemiBold)
                     }
 
                     Button(
@@ -464,17 +495,59 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary,
                             contentColor = MaterialTheme.colorScheme.onSecondary
-                        )
-                    ) { Text("Reiniciar") }
+                        ),
+                        shape = RoundedCornerShape(14.dp)
+                    ) { Text("Reiniciar", fontWeight = FontWeight.SemiBold) }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(18.dp))
 
                 Text(
                     text = "Sesiones completadas: $completedSessions",
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 18.sp
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
                 )
+            }
+        }
+    }
+
+    // -----------------------
+    // Modal de selección (solo modo manual)
+    // (lo dejo al final para no cortar el flujo visual de arriba)
+    // -----------------------
+    if (showDurationDialog && !cycle4Enabled) {
+        Dialog(onDismissRequest = { /* No cerrar al tocar fuera */ }) {
+            Card(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Selecciona la duración de la sesión", fontSize = 20.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(16.dp))
+                    DuracionTrabajo(
+                        selectedTime = selectedTime,
+                        onTimeSelected = { newTime -> selectedTime = newTime },
+                        options = listOf(1, 25, 50)
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    Button(
+                        onClick = { showDurationDialog = false },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Text("Confirmar", fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
     }
@@ -484,13 +557,18 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
 private fun EstadoPildora(texto: String) {
     Box(
         modifier = Modifier
+            .shadow(6.dp, RoundedCornerShape(999.dp), clip = false)
             .background(
                 color = MaterialTheme.colorScheme.primary,
                 shape = RoundedCornerShape(999.dp)
             )
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Text(text = texto, color = MaterialTheme.colorScheme.secondary)
+        Text(
+            text = texto,
+            color = MaterialTheme.colorScheme.onPrimary, // texto siempre blanco
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
