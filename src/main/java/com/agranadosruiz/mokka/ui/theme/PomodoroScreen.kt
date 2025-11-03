@@ -329,7 +329,6 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                             else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
-                        // Píldora marrón cuando el ciclo x4 está desactivado
                         val estado = when {
                             waitingForBreak -> "¡SESIÓN COMPLETADA!"
                             sessionType == SessionType.WORK -> "TRABAJO"
@@ -343,8 +342,8 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     Button(
                         onClick = { cycle4Enabled = !cycle4Enabled },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (cycle4Enabled) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.secondary,
+                            containerColor = if (cycle4Enabled) MaterialTheme.colorScheme.onSurface
+                            else MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) { Text(cicloLabel) }
@@ -486,12 +485,12 @@ private fun EstadoPildora(texto: String) {
     Box(
         modifier = Modifier
             .background(
-                color = MaterialTheme.colorScheme.primary, // marrón del tema
+                color = MaterialTheme.colorScheme.primary,
                 shape = RoundedCornerShape(999.dp)
             )
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Text(text = texto, color = MaterialTheme.colorScheme.onPrimary)
+        Text(text = texto, color = MaterialTheme.colorScheme.secondary)
     }
 }
 
