@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,12 +45,15 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
     // -----------------------
     // Estados principales
     // -----------------------
-    var selectedTime by remember { mutableIntStateOf(25) }
+    var selectedTime by remember { mutableIntStateOf(25) }             // min de trabajo (solo modo manual)
     var isRunning by remember { mutableStateOf(false) }
     var completedSessions by remember { mutableStateOf(0) }
 
     // Modo ciclo x4: Trabajo(25) Descanso(5) Trabajo(25) Descanso(5)
     var cycle4Enabled by remember { mutableStateOf(true) }
+
+    // Diálogo al completar el ciclo x4
+    var cycleCompleteDialog by remember { mutableStateOf(false) }
 
     // Plan de intervalos
     data class Interval(val type: SessionType, val durationSec: Int)
@@ -63,7 +67,9 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                 Interval(SessionType.BREAK, 5 * 60),
             )
         } else {
+            // Modo “manual”: trabajo seleccionado y descanso asociado
             val breakSec = when (selectedTime) {
+                1 -> 20
                 25 -> 5 * 60
                 50 -> 10 * 60
                 else -> 10 * 60
@@ -80,8 +86,9 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
     var sessionType by remember { mutableStateOf(plan[currentIndex].type) }
     var timeLeft by remember { mutableIntStateOf(plan[currentIndex].durationSec) }
 
+    // Popup (solo modo manual)
     var showDurationDialog by remember { mutableStateOf(!cycle4Enabled) }
-    var waitingForBreak by remember { mutableStateOf(false) }
+    var waitingForBreak by remember { mutableStateOf(false) } // solo en modo manual
 
     // -----------------------
     // Reloj
@@ -105,11 +112,12 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     currentIndex = next
                     sessionType = plan[next].type
                     timeLeft = plan[next].durationSec
-                    // Auto-encadenado: sigue corriendo
+                    // Sigue corriendo
                     isRunning = true
                 } else {
-                    // Fin de los 4 intervalos
+                    // Fin de los 4 intervalos -> mostrar diálogo
                     isRunning = false
+                    cycleCompleteDialog = true
                 }
             } else {
                 // Modo manual (flujo anterior con popup)
@@ -141,13 +149,16 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
         isRunning = false
         waitingForBreak = false
         showDurationDialog = !cycle4Enabled
+        cycleCompleteDialog = false
     }
 
+    // Si activas Ciclo x4, forzamos 25 min de trabajo y rehacemos plan
     LaunchedEffect(cycle4Enabled) {
         if (cycle4Enabled) selectedTime = 25
         resetWithNewPlan()
     }
 
+    // Si cambias la duración en modo manual, rehacemos plan
     LaunchedEffect(selectedTime) {
         if (!cycle4Enabled) resetWithNewPlan()
     }
@@ -158,7 +169,9 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
     if (waitingForBreak && !cycle4Enabled) {
         Dialog(onDismissRequest = { /* No cerrar tocando fuera */ }) {
             Card(
-                modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
@@ -197,12 +210,61 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
     }
 
     // -----------------------
+    // Diálogo al completar ciclo x4
+    // -----------------------
+    if (cycleCompleteDialog && cycle4Enabled) {
+        Dialog(onDismissRequest = { /* No cerrar tocando fuera */ }) {
+            Card(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("🎯 Ciclo x4 completado", fontSize = 20.sp, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Has terminado los 4 intervalos (25/5/25/5). ¿Qué quieres hacer?",
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = {
+                                // Reinicia el ciclo x4 al primer bloque (en pausa)
+                                resetWithNewPlan()
+                                cycleCompleteDialog = false
+                            }
+                        ) { Text("Repetir ciclo") }
+
+                        Button(
+                            onClick = { cycleCompleteDialog = false },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            )
+                        ) { Text("Cerrar") }
+                    }
+                }
+            }
+        }
+    }
+
+    // -----------------------
     // Modal de selección (solo modo manual)
     // -----------------------
     if (showDurationDialog && !cycle4Enabled) {
-        Dialog(onDismissRequest = { /* No cerrar tocando fuera */ }) {
+        Dialog(onDismissRequest = { /* No cerrar al tocar fuera */ }) {
             Card(
-                modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
@@ -214,9 +276,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                     Spacer(Modifier.height(16.dp))
                     DuracionTrabajo(
                         selectedTime = selectedTime,
-                        onTimeSelected = { newTime ->
-                            selectedTime = newTime
-                        },
+                        onTimeSelected = { newTime -> selectedTime = newTime },
                         options = listOf(1, 25, 50)
                     )
                     Spacer(Modifier.height(24.dp))
@@ -238,36 +298,47 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Card(
-            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // Cabecera pequeño toggle ciclo
+                // Cabecera: estado + toggle ciclo
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Estado / bloque
-                    val bloqueTxt =
-                        if (cycle4Enabled) "Bloque ${currentIndex + 1} de ${plan.size}" else
-                            if (sessionType == SessionType.WORK) "TRABAJO" else "DESCANSO"
+                    // IZQUIERDA: Estado
+                    if (cycle4Enabled) {
+                        // Texto simple cuando el ciclo x4 está activo
+                        Text(
+                            text = "Bloque ${currentIndex + 1} de ${plan.size}",
+                            fontSize = 16.sp,
+                            color = if (sessionType == SessionType.WORK)
+                                MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        // Píldora marrón cuando el ciclo x4 está desactivado
+                        val estado = when {
+                            waitingForBreak -> "¡SESIÓN COMPLETADA!"
+                            sessionType == SessionType.WORK -> "TRABAJO"
+                            else -> "DESCANSO"
+                        }
+                        EstadoPildora(estado)
+                    }
 
-                    Text(
-                        text = bloqueTxt,
-                        fontSize = 16.sp,
-                        color = if (cycle4Enabled && sessionType == SessionType.WORK)
-                            MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    // Botón modo ciclo x4
+                    // DERECHA: Botón toggle ciclo x4
                     val cicloLabel = if (cycle4Enabled) "Ciclo x4: ON" else "Ciclo x4: OFF"
                     Button(
                         onClick = { cycle4Enabled = !cycle4Enabled },
@@ -283,7 +354,9 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
 
                 // Sección imagen/animaciones
                 Box(
-                    modifier = Modifier.height(250.dp).padding(bottom = 16.dp),
+                    modifier = Modifier
+                        .height(250.dp)
+                        .padding(bottom = 16.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
                     when {
@@ -294,7 +367,9 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Box(
-                                modifier = Modifier.align(Alignment.TopCenter).padding(top = 0.dp, end = 20.dp)
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = 0.dp, end = 20.dp)
                             ) {
                                 BubblesAnimation(
                                     areaWidth = 120.dp,
@@ -303,7 +378,9 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                                 )
                             }
                             Box(
-                                modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-35).dp)
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .offset(y = (-35).dp)
                             ) {
                                 Llamas(
                                     areaWidth = 220.dp,
@@ -326,7 +403,9 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                                 altoArea = 120.dp,
                                 colorVapor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.35f),
                                 posicionesX = listOf(0.46f, 0.5f, 0.54f),
-                                modifier = Modifier.align(Alignment.TopCenter).offset(y = (-10).dp)
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .offset(y = (-10).dp)
                             )
                         }
 
@@ -354,7 +433,7 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                         fontSize = 50.sp,
                         color = androidx.compose.ui.graphics.Color(0xFF4E342E),
                         style = androidx.compose.ui.text.TextStyle(
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            fontWeight = FontWeight.Bold
                         )
                     )
                 }
@@ -364,14 +443,8 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                 // Botones
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(
-                        onClick = {
-                            // Si está al final del ciclo x4, reiniciamos al pulsar iniciar
-                            if (cycle4Enabled && !isRunning && currentIndex == plan.lastIndex && timeLeft == 0) {
-                                resetWithNewPlan()
-                            }
-                            isRunning = !isRunning
-                        },
-                        enabled = !(waitingForBreak && !cycle4Enabled),
+                        onClick = { isRunning = !isRunning },
+                        enabled = !(waitingForBreak && !cycle4Enabled) && !cycleCompleteDialog,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
@@ -405,6 +478,20 @@ fun PomodoroScreen(modifier: Modifier = Modifier) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun EstadoPildora(texto: String) {
+    Box(
+        modifier = Modifier
+            .background(
+                color = MaterialTheme.colorScheme.primary, // marrón del tema
+                shape = RoundedCornerShape(999.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(text = texto, color = MaterialTheme.colorScheme.onPrimary)
     }
 }
 
