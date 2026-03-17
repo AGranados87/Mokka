@@ -20,4 +20,3 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Mokka"
-include(":app")
